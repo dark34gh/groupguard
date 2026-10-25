@@ -1,0 +1,462 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#075e54">
+<title>GroupGuard</title>
+<style>
+:root {
+  --green:#075e54;
+  --light:#d9fdd3;
+  --bg:#efe7de;
+  --white:#fff;
+  --text:#111b21;
+  --muted:#667781;
+}
+* { box-sizing:border-box; }
+body {
+  margin:0;
+  font-family:Arial,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+}
+header {
+  background:var(--green);
+  color:white;
+  padding:16px;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  position:sticky;
+  top:0;
+  z-index:2;
+}
+.logo {
+  background:#d9fdd3;
+  color:var(--green);
+  border-radius:50%;
+  width:45px;height:45px;
+  display:grid;place-items:center;
+  font-size:22px;
+}
+header h1 { font-size:18px;margin:0 0 5px; }
+header p { font-size:12px;margin:0;color:#d5eee8; }
+main { max-width:600px;margin:auto;padding:16px; }
+.card {
+  background:white;
+  border-radius:12px;
+  padding:16px;
+  margin-bottom:14px;
+  box-shadow:0 1px 3px #00000012;
+}
+h2 { font-size:16px;margin:0 0 12px; }
+.stats {
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:8px;
+}
+.stat {
+  background:#f5f7f7;
+  border-radius:9px;
+  padding:12px 5px;
+  text-align:center;
+}
+.stat strong { display:block;font-size:22px;color:var(--green); }
+.stat span { font-size:11px;color:var(--muted); }
+.row {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+}
+input,textarea,select {
+  width:100%;
+  border:1px solid #d5dadd;
+  border-radius:8px;
+  padding:12px;
+  margin:5px 0 10px;
+  background:white;
+  font:inherit;
+  color:var(--text);
+}
+button {
+  border:0;
+  border-radius:8px;
+  padding:11px 14px;
+  background:var(--green);
+  color:white;
+  font-weight:bold;
+  cursor:pointer;
+}
+button.secondary { background:#e8f3ef;color:var(--green); }
+button.danger { background:#b42318;color:white; }
+button:active { opacity:.8; }
+.member {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px 0;
+  border-bottom:1px solid #eee;
+}
+.avatar {
+  width:38px;height:38px;
+  border-radius:50%;
+  background:#d9fdd3;
+  color:var(--green);
+  display:grid;place-items:center;
+  font-weight:bold;
+}
+.member-info { flex:1;min-width:0; }
+.member-info strong { font-size:14px; }
+.member-info small { display:block;color:var(--muted);margin-top:4px; }
+.member button { padding:8px;font-size:12px; }
+.chat {
+  background:var(--bg);
+  border-radius:10px;
+  min-height:160px;
+  max-height:280px;
+  overflow-y:auto;
+  padding:10px;
+  margin-bottom:10px;
+}
+.msg {
+  background:white;
+  border-radius:8px;
+  padding:10px;
+  margin:7px 0;
+  max-width:95%;
+  overflow-wrap:anywhere;
+  font-size:14px;
+}
+.msg.mine { background:var(--light);margin-left:auto; }
+.msg small { display:block;color:var(--muted);font-size:10px;margin-top:5px; }
+.note { font-size:12px;color:var(--muted);line-height:1.5; }
+.pill {
+  display:inline-block;
+  padding:4px 8px;
+  border-radius:20px;
+  background:#e8f3ef;
+  color:var(--green);
+  font-size:11px;
+}
+.actions { display:flex;gap:8px;flex-wrap:wrap; }
+.actions button { flex:1; }
+footer { text-align:center;padding:15px;color:var(--muted);font-size:12px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🛡️</div>
+  <div>
+    <h1>GroupGuard</h1>
+    <p>Assistant de gestion de groupe · Démo locale</p>
+  </div>
+</header>
+
+<main>
+  <section class="card">
+    <div class="row">
+      <h2>Tableau de bord</h2>
+      <span class="pill">MODE DÉMO</span>
+    </div>
+    <div class="stats">
+      <div class="stat"><strong id="count">3</strong><span>Membres</span></div>
+      <div class="stat"><strong id="warnings">0</strong><span>Avertissements</span></div>
+      <div class="stat"><strong id="commands">0</strong><span>Commandes</span></div>
+    </div>
+    <p class="note">Les données concernent uniquement cette démonstration dans ton navigateur.</p>
+  </section>
+
+  <section class="card">
+    <h2>Gestion des membres</h2>
+    <label for="memberName">Nom du membre à ajouter</label>
+    <div class="row">
+      <input id="memberName" placeholder="Ex. Patrick" maxlength="40">
+      <button id="addBtn">Ajouter</button>
+    </div>
+    <div id="members"></div>
+  </section>
+
+  <section class="card">
+    <h2>Commandes du bot</h2>
+    <div class="chat" id="chat" aria-live="polite">
+      <div class="msg">GroupGuard est prêt. Essaie <b>!help</b>.<small>Assistant · maintenant</small></div>
+    </div>
+    <form id="commandForm">
+      <label for="commandInput">Écris une commande</label>
+      <div class="row">
+        <input id="commandInput" placeholder="!help" autocomplete="off">
+        <button type="submit">Envoyer</button>
+      </div>
+    </form>
+    <div class="actions">
+      <button class="secondary quick" data-command="!help">!help</button>
+      <button class="secondary quick" data-command="!rules">!rules</button>
+      <button class="secondary quick" data-command="!members">!members</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Règles du groupe</h2>
+    <label for="rules">Modifie les règles de démonstration</label>
+    <textarea id="rules" rows="4">1. Respecter tous les membres.
+2. Éviter le spam.
+3. Pas de liens suspects.
+4. Respecter les administrateurs.</textarea>
+    <button id="saveRules">Enregistrer les règles</button>
+    <p id="rulesStatus" class="note">Les règles ne sont pas encore enregistrées.</p>
+  </section>
+
+  <section class="card">
+    <h2>Avertissement de démonstration</h2>
+    <label for="warnMember">Choisir un membre</label>
+    <select id="warnMember"></select>
+    <label for="reason">Motif</label>
+    <input id="reason" maxlength="120" placeholder="Ex. Rappel des règles">
+    <button id="warnBtn">Simuler un avertissement</button>
+    <p id="warnStatus" class="note">Aucune action réelle n'est effectuée sur WhatsApp.</p>
+  </section>
+
+  <section class="card">
+    <h2>Journal d'activité</h2>
+    <div id="logs" class="note">Le journal apparaîtra ici.</div>
+    <button class="secondary" id="clearLogs">Effacer le journal</button>
+  </section>
+</main>
+
+<footer>GroupGuard · Projet éducatif HTML, CSS et JavaScript</footer>
+
+<script>
+"use strict";
+
+const $ = id => document.getElementById(id);
+
+let members = [
+  { id: 1, name: "Rach", role: "Administrateur", warnings: 0 },
+  { id: 2, name: "Patrick", role: "Membre", warnings: 0 },
+  { id: 3, name: "Sarah", role: "Membre", warnings: 0 }
+];
+
+let nextId = 4;
+let commandCount = 0;
+let totalWarnings = 0;
+let logs = [];
+
+function log(text) {
+  logs.unshift(new Date().toLocaleTimeString() + " — " + text);
+  logs = logs.slice(0, 20);
+  renderLogs();
+}
+
+function renderLogs() {
+  const container = $("logs");
+  container.replaceChildren();
+
+  if (!logs.length) {
+    container.textContent = "Aucune activité enregistrée.";
+    return;
+  }
+
+  logs.forEach(entry => {
+    const line = document.createElement("div");
+    line.textContent = entry;
+    line.style.marginBottom = "7px";
+    container.appendChild(line);
+  });
+}
+
+function renderMembers() {
+  $("count").textContent = members.length;
+  $("warnings").textContent = totalWarnings;
+
+  const container = $("members");
+  const select = $("warnMember");
+  container.replaceChildren();
+  select.replaceChildren();
+
+  if (!members.length) {
+    const empty = document.createElement("p");
+    empty.className = "note";
+    empty.textContent = "Aucun membre dans la démonstration.";
+    container.appendChild(empty);
+  }
+
+  members.forEach(member => {
+    const row = document.createElement("div");
+    row.className = "member";
+
+    const avatar = document.createElement("div");
+    avatar.className = "avatar";
+    avatar.textContent = member.name.charAt(0).toUpperCase();
+
+    const info = document.createElement("div");
+    info.className = "member-info";
+
+    const name = document.createElement("strong");
+    name.textContent = member.name;
+
+    const details = document.createElement("small");
+    details.textContent = member.role + " · " +
+      member.warnings + " avertissement(s)";
+
+    info.append(name, details);
+    row.append(avatar, info);
+
+    if (member.role !== "Administrateur") {
+      const remove = document.createElement("button");
+      remove.className = "danger";
+      remove.textContent = "Retirer";
+      remove.addEventListener("click", () => {
+        if (!confirm("Retirer " + member.name + " de la démo ?")) return;
+        members = members.filter(m => m.id !== member.id);
+        log(member.name + " retiré de la liste de démonstration.");
+        renderMembers();
+      });
+      row.appendChild(remove);
+    }
+
+    container.appendChild(row);
+
+    const option = document.createElement("option");
+    option.value = String(member.id);
+    option.textContent = member.name;
+    select.appendChild(option);
+  });
+}
+
+function addMember() {
+  const input = $("memberName");
+  const name = input.value.trim();
+
+  if (!name) {
+    alert("Entre d'abord un nom.");
+    return;
+  }
+
+  if (members.some(m => m.name.toLowerCase() === name.toLowerCase())) {
+    alert("Ce nom existe déjà dans la démo.");
+    return;
+  }
+
+  members.push({
+    id: nextId++,
+    name,
+    role: "Membre",
+    warnings: 0
+  });
+
+  input.value = "";
+  log(name + " ajouté à la liste de démonstration.");
+  renderMembers();
+}
+
+function addMessage(text, mine = false) {
+  const msg = document.createElement("div");
+  msg.className = "msg" + (mine ? " mine" : "");
+  msg.textContent = text;
+
+  const time = document.createElement("small");
+  time.textContent = new Date().toLocaleTimeString();
+  msg.appendChild(time);
+
+  $("chat").appendChild(msg);
+  $("chat").scrollTop = $("chat").scrollHeight;
+}
+
+function handleCommand(raw) {
+  const command = raw.trim().toLowerCase();
+  if (!command) return;
+
+  commandCount++;
+  $("commands").textContent = commandCount;
+  addMessage(raw, true);
+
+  switch (command) {
+    case "!help":
+      addMessage("Commandes disponibles : !help, !rules, !members, !status");
+      break;
+
+    case "!rules":
+      addMessage("Règles du groupe : " + $("rules").value);
+      break;
+
+    case "!members":
+      addMessage("Membres de démonstration : " +
+        (members.map(m => m.name).join(", ") || "aucun"));
+      break;
+
+    case "!status":
+      addMessage("État : interface locale active. " +
+        members.length + " membre(s) dans la démo.");
+      break;
+
+    default:
+      addMessage("Commande inconnue. Tape !help pour voir les commandes.");
+  }
+
+  log("Commande utilisée : " + raw.trim());
+}
+
+$("addBtn").addEventListener("click", addMember);
+
+$("memberName").addEventListener("keydown", event => {
+  if (event.key === "Enter") addMember();
+});
+
+$("commandForm").addEventListener("submit", event => {
+  event.preventDefault();
+  handleCommand($("commandInput").value);
+  $("commandInput").value = "";
+});
+
+document.querySelectorAll(".quick").forEach(button => {
+  button.addEventListener("click", () => {
+    handleCommand(button.dataset.command);
+  });
+});
+
+$("saveRules").addEventListener("click", () => {
+  $("rulesStatus").textContent = "Règles enregistrées pour cette session.";
+  log("Règles de démonstration modifiées.");
+});
+
+$("warnBtn").addEventListener("click", () => {
+  const id = Number($("warnMember").value);
+  const member = members.find(m => m.id === id);
+  const reason = $("reason").value.trim();
+
+  if (!member) {
+    alert("Ajoute d'abord un membre.");
+    return;
+  }
+
+  if (!reason) {
+    alert("Indique le motif de l'avertissement.");
+    return;
+  }
+
+  member.warnings++;
+  totalWarnings++;
+
+  $("warnStatus").textContent =
+    "Avertissement simulé pour " + member.name + " : " + reason +
+    ". Aucune notification WhatsApp envoyée.";
+
+  $("reason").value = "";
+  log("Avertissement simulé pour " + member.name + " : " + reason);
+  renderMembers();
+});
+
+$("clearLogs").addEventListener("click", () => {
+  logs = [];
+  renderLogs();
+});
+
+renderMembers();
+renderLogs();
+</script>
+</body>
+</html>
